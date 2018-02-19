@@ -16,6 +16,7 @@ use League\Glide\Manipulators\Contrast;
 use League\Glide\Manipulators\Crop;
 use League\Glide\Manipulators\Encode;
 use League\Glide\Manipulators\Filter;
+use League\Glide\Manipulators\Flip;
 use League\Glide\Manipulators\Gamma;
 use League\Glide\Manipulators\Orientation;
 use League\Glide\Manipulators\Pixelate;
@@ -56,6 +57,7 @@ class ServerFactory
         $server->setSourcePathPrefix($this->getSourcePathPrefix());
         $server->setCachePathPrefix($this->getCachePathPrefix());
         $server->setGroupCacheInFolders($this->getGroupCacheInFolders());
+        $server->setCacheWithFileExtensions($this->getCacheWithFileExtensions());
         $server->setDefaults($this->getDefaults());
         $server->setPresets($this->getPresets());
         $server->setBaseUrl($this->getBaseUrl());
@@ -138,6 +140,19 @@ class ServerFactory
     }
 
     /**
+     * Get the cache with file extensions setting.
+     * @return bool Whether to cache with file extensions.
+     */
+    public function getCacheWithFileExtensions()
+    {
+        if (isset($this->config['cache_with_file_extensions'])) {
+            return $this->config['cache_with_file_extensions'];
+        }
+
+        return false;
+    }
+
+    /**
      * Get watermarks file system.
      * @return FilesystemInterface|null Watermarks file system.
      */
@@ -211,6 +226,7 @@ class ServerFactory
             new Gamma(),
             new Sharpen(),
             new Filter(),
+            new Flip(),
             new Blur(),
             new Pixelate(),
             new Watermark($this->getWatermarks(), $this->getWatermarksPathPrefix()),

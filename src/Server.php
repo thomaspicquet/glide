@@ -43,6 +43,12 @@ class Server
     protected $groupCacheInFolders = true;
 
     /**
+     * Whether to cache with file extensions.
+     * @var bool
+     */
+    protected $cacheWithFileExtensions = false;
+
+    /**
      * Image manipulation API.
      * @var ApiInterface
      */
@@ -144,9 +150,11 @@ class Server
     public function getSourcePath($path)
     {
         $path = trim($path, '/');
+        
+        $baseUrl = $this->baseUrl.'/';
 
-        if (substr($path, 0, strlen($this->baseUrl)) === $this->baseUrl) {
-            $path = trim(substr($path, strlen($this->baseUrl)), '/');
+        if (substr($path, 0, strlen($baseUrl)) === $baseUrl) {
+            $path = trim(substr($path, strlen($baseUrl)), '/');
         }
 
         if ($path === '') {
@@ -243,6 +251,24 @@ class Server
     }
 
     /**
+     * Set the cache with file extensions setting.
+     * @param bool $cacheWithFileExtensions Whether to cache with file extensions.
+     */
+    public function setCacheWithFileExtensions($cacheWithFileExtensions)
+    {
+        $this->cacheWithFileExtensions = $cacheWithFileExtensions;
+    }
+
+    /**
+     * Get the cache with file extensions setting.
+     * @return bool Whether to cache with file extensions.
+     */
+    public function getCacheWithFileExtensions()
+    {
+        return $this->cacheWithFileExtensions;
+    }
+
+    /**
      * Get cache path.
      * @param  string $path   Image path.
      * @param  array  $params Image manipulation params.
@@ -262,13 +288,19 @@ class Server
 
         $md5 = md5($sourcePath.'?'.http_build_query($params));
 
-        $path = $this->groupCacheInFolders ? $sourcePath.'/'.$md5 : $md5;
+        $cachedPath = $this->groupCacheInFolders ? $sourcePath.'/'.$md5 : $md5;
 
         if ($this->cachePathPrefix) {
-            $path = $this->cachePathPrefix.'/'.$path;
+            $cachedPath = $this->cachePathPrefix.'/'.$cachedPath;
+        }
+        
+        if ($this->cacheWithFileExtensions) {
+            $ext = (isset($params['fm']) ? $params['fm'] : pathinfo($path)['extension']);
+            $ext = ($ext === 'pjpg') ? 'jpg' : $ext;
+            $cachedPath .= '.'.$ext;
         }
 
-        return $path;
+        return $cachedPath;
     }
 
     /**
@@ -453,7 +485,9 @@ class Server
 
         $stream = $this->cache->readStream($path);
 
-        rewind($stream);
+        if (ftell($stream) !== 0) {
+            rewind($stream);
+        }
         fpassthru($stream);
         fclose($stream);
     }
