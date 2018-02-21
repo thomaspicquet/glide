@@ -5,6 +5,7 @@ namespace League\Glide;
 use InvalidArgumentException;
 use League\Flysystem\FileExistsException;
 use League\Flysystem\FilesystemInterface;
+use League\Flysystem\Memory\MemoryAdapter;
 use League\Glide\Api\ApiInterface;
 use League\Glide\Filesystem\FileNotFoundException;
 use League\Glide\Filesystem\FilesystemException;
@@ -98,14 +99,6 @@ class Server
     }
 
     /**
-     * Delete temp image
-     */
-    public function __destruct()
-    {
-        @unlink($this->tmp);
-    }
-
-    /**
      * Set source file system.
      * @param FilesystemInterface $source Source file system.
      */
@@ -150,7 +143,7 @@ class Server
     public function getSourcePath($path)
     {
         $path = trim($path, '/');
-        
+
         $baseUrl = $this->baseUrl.'/';
 
         if (substr($path, 0, strlen($baseUrl)) === $baseUrl) {
@@ -293,7 +286,7 @@ class Server
         if ($this->cachePathPrefix) {
             $cachedPath = $this->cachePathPrefix.'/'.$cachedPath;
         }
-        
+
         if ($this->cacheWithFileExtensions) {
             $ext = (isset($params['fm']) ? $params['fm'] : pathinfo($path)['extension']);
             $ext = ($ext === 'pjpg') ? 'jpg' : $ext;
@@ -553,7 +546,9 @@ class Server
             // request. It's best to just fail silently.
         }
 
-        @unlink($this->tmp);
+        if (!$this->cache instanceof MemoryAdapter) {
+            @unlink($this->tmp);
+        }
 
         return $cachedPath;
     }
