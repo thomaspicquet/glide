@@ -40,6 +40,7 @@ class Encode extends BaseManipulator
             'jpg' => 'image/jpeg',
             'pjpg' => 'image/jpeg',
             'png' => 'image/png',
+            'webp' => 'image/webp',
         ];
 
         if (array_key_exists($this->fm, $allowed)) {

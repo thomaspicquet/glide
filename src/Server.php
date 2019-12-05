@@ -5,7 +5,6 @@ namespace League\Glide;
 use InvalidArgumentException;
 use League\Flysystem\FileExistsException;
 use League\Flysystem\FilesystemInterface;
-use League\Flysystem\Memory\MemoryAdapter;
 use League\Glide\Api\ApiInterface;
 use League\Glide\Filesystem\FileNotFoundException;
 use League\Glide\Filesystem\FilesystemException;
@@ -80,12 +79,6 @@ class Server
     protected $presets = [];
 
     /**
-     * Temp image
-     * @var string
-     */
-    protected $tmp;
-
-    /**
      * Create Server instance.
      * @param FilesystemInterface $source Source file system.
      * @param FilesystemInterface $cache  Cache file system.
@@ -143,7 +136,7 @@ class Server
     public function getSourcePath($path)
     {
         $path = trim($path, '/');
-
+        
         $baseUrl = $this->baseUrl.'/';
 
         if (substr($path, 0, strlen($baseUrl)) === $baseUrl) {
@@ -286,7 +279,7 @@ class Server
         if ($this->cachePathPrefix) {
             $cachedPath = $this->cachePathPrefix.'/'.$cachedPath;
         }
-
+        
         if ($this->cacheWithFileExtensions) {
             $ext = (isset($params['fm']) ? $params['fm'] : pathinfo($path)['extension']);
             $ext = ($ext === 'pjpg') ? 'jpg' : $ext;
@@ -521,9 +514,9 @@ class Server
         // We need to write the image to the local disk before
         // doing any manipulations. This is because EXIF data
         // can only be read from an actual file.
-        $this->tmp = tempnam(sys_get_temp_dir(), 'Glide');
+        $tmp = tempnam(sys_get_temp_dir(), 'Glide');
 
-        if (file_put_contents($this->tmp, $source) === false) {
+        if (file_put_contents($tmp, $source) === false) {
             throw new FilesystemException(
                 'Unable to write temp file for `'.$sourcePath.'`.'
             );
@@ -532,7 +525,7 @@ class Server
         try {
             $write = $this->cache->write(
                 $cachedPath,
-                $this->api->run($this->tmp, $this->getAllParams($params))
+                $this->api->run($tmp, $this->getAllParams($params))
             );
 
             if ($write === false) {
@@ -544,10 +537,8 @@ class Server
             // This edge case occurs when the target already exists
             // because it's currently be written to disk in another
             // request. It's best to just fail silently.
-        }
-
-        if (!$this->cache instanceof MemoryAdapter) {
-            @unlink($this->tmp);
+        } finally {
+            unlink($tmp);
         }
 
         return $cachedPath;
